@@ -105,12 +105,17 @@ async def cat_home_handler(query: CallbackQuery):
 
 @bot.callback_query_handler(lambda query: query.data == "cat-picture")
 async def cat_picture_handler(query: CallbackQuery):
-    state[query.message.chat.id] = State.SENT_IMAGE
+    request = requests.get("https://api.thecatapi.com/v1/images/search")
 
-    await bot.edit_message_text("😻 Отправляю картинку...", query.message.chat.id, query.message.message_id, reply_markup=back_menu())
-    message = await bot.send_photo(query.message.chat.id, f"https://cataas.com/cat?time={int(time())}") # Добавляем time, чтобы Telegram не кешировал фото
+    if request.status_code == 200:
+        state[query.message.chat.id] = State.SENT_IMAGE
 
-    state_message_id[query.message.chat.id] = message.message_id
+        await bot.edit_message_text("😻 Отправляю картинку...", query.message.chat.id, query.message.message_id, reply_markup=back_menu())
+        message = await bot.send_photo(query.message.chat.id, f"{request.json()[0]["url"]}")
+
+        state_message_id[query.message.chat.id] = message.message_id
+    else:
+        await bot.edit_message_text("😸 Не могу отправить картинку, но коты все равно классные!", query.message.chat.id, query.message.message_id, reply_markup=back_menu())
 
 
 @bot.callback_query_handler(lambda query: query.data == "cat-calculator")
